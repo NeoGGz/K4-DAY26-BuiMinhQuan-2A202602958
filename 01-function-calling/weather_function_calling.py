@@ -9,10 +9,27 @@ Cách chạy:
     python weather_function_calling.py
 """
 
+import os
+import sys
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    # Cũng thử load từ thư mục lab nếu có
+    from pathlib import Path
+    load_dotenv(Path(__file__).parent.parent / "04-lab" / "mcp-client" / ".env")
+except ImportError:
+    pass
+
 from google import genai
 from google.genai import types
-
-client = genai.Client()
 
 MODEL = "gemini-2.5-flash"
 
@@ -72,6 +89,17 @@ def get_weather(city: str) -> str:
 
 def run(prompt: str) -> str:
     """Gửi *prompt* tới Gemini, tự động xử lý function calling và trả về câu trả lời cuối."""
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if not api_key or "YOUR_GEMINI" in api_key:
+        return (
+            "⚠️ Lỗi: Chưa cấu hình GEMINI_API_KEY hoặc GOOGLE_API_KEY.\n"
+            "Vui lòng đặt biến môi trường trước khi chạy:\n"
+            "  Windows PowerShell: $env:GEMINI_API_KEY=\"your_key_here\"\n"
+            "  Linux/macOS:        export GEMINI_API_KEY=\"your_key_here\"\n"
+            "Hoặc thêm vào file .env"
+        )
+
+    client = genai.Client()
     contents: list[types.Content] = [
         types.Content(role="user", parts=[types.Part.from_text(text=prompt)])
     ]
